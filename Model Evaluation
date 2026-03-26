@@ -1,0 +1,14 @@
+# Đánh giá mô hình
+import matplotlib.pyplot as plt
+
+plt.plot(history.history['loss'], label='train loss')
+plt.plot(history.history['val_loss'], label='val loss')
+plt.legend()
+plt.show()
+
+# Tính Accuracy và Recall
+acc = accuracy_score(y_true, y_pred)
+recall = recall_score(y_true, y_pred, average='macro') 
+
+print(f"Accuracy: {acc:.4f}")
+print(f"Recall: {recall:.4f}")

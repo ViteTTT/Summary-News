@@ -1,0 +1,21 @@
+# Test mô hình
+import random
+
+idx = random.randint(0, len(test_df)-1)
+print("\n Bài báo mẫu:", idx)
+
+article = test_df['article'].iloc[idx]
+pred_highlights = decode_sequence(x_test_seq[idx].reshape(1, max_text_len))
+actual_highlights = test_df['highlights'].iloc[idx]
+
+print("\n Bài báo:")
+print(article)
+print(f"Độ dài : {len(article.split())}")
+
+print("\n Máy tóm tắt:")
+print(pred_highlights)
+print(f"Độ dài: {len(pred_highlights.split())}")
+
+print("\n Bài tóm tắt thật:")
+print(actual_highlights)
+print(f"Độ dài: {len(actual_highlights.split())}")

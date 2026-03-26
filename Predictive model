@@ -1,0 +1,50 @@
+# Tạo mô hình suy luận
+
+# Encoder model
+encoder_model = model(encoder_inputs, [encoder_output, state_h, state_c])
+
+# Decoder model
+decoder_state_input_h = Input(shape=(latent_dim,))
+decoder_state_input_c = Input(shape=(latent_dim,))
+decoder_hidden_state_input = Input(shape=(max_text_len, latent_dim))  # encoder_output
+dec_emb2 = dec_emb_layer(decoder_inputs)
+
+decoder_output2, state_h2, state_c2 = decoder_lstm(
+    dec_emb2, initial_state=[decoder_state_input_h, decoder_state_input_c]
+)
+attention2 = Attention()([decoder_output2, decoder_hidden_state_input])
+decoder_concat2 = Concatenate(axis=-1)([decoder_output2, attention2])
+decoder_outputs2 = decoder_dense(decoder_concat2)
+decoder_model = Model(
+    [decoder_inputs, decoder_hidden_state_input, decoder_state_input_h, decoder_state_input_c],
+    [decoder_outputs2, state_h2, state_c2]
+)
+
+# Tạo ra bản tóm tắt mới
+reverse_target_index = y_tokenizer.index_word
+target_index = y_tokenizer.word_index
+
+def decode_sequence(input_seq):
+    e_out, e_h, e_c = encoder_model.predict(input_seq, verbose=0)
+
+    target_seq = np.zeros((1,1))
+    target_seq[0,0] = target_index['sos']
+
+    decoded_sentence = ""
+    stop = False
+
+    while not stop:
+        output, h, c = decoder_model.predict([target_seq, e_out, e_h, e_c], verbose=0)
+        word_idx = np.argmax(output[0, -1, :])
+        word = reverse_target_index.get(word_idx, '')
+
+        if word == 'eos' or len(decoded_sentence.split()) >= max_summary_len:
+            stop = True
+        else:
+            decoded_sentence += ' ' + word
+
+        target_seq = np.zeros((1,1))
+        target_seq[0,0] = word_idx
+        e_h, e_c = h, c
+
+    return decoded_sentence.strip()

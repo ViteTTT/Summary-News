@@ -1,0 +1,108 @@
+!pip install -q kaggle
+import pandas as pd
+import numpy as np
+import tensorflow as tf
+from sklearn.model_selection import train_test_split
+from tensorflow.keras.preprocessing.text import Tokenizer
+from tensorflow.keras.preprocessing.sequence import pad_sequences
+
+# Tải dataset
+from google.colab import files
+files.upload()
+!mkdir -p ~/.kaggle
+!mv kaggle.json ~/.kaggle/
+!chmod 600 ~/.kaggle/kaggle.json
+!kaggle datasets download -d gowrishankarp/newspaper-text-summarization-cnn-dailymail
+!unzip newspaper-text-summarization-cnn-dailymail.zip -d ./cnn_dailymail
+
+# Load dataset
+df = pd.read_csv("cnn_dailymail/cnn_dailymail/train.csv")
+
+# Kiểm tra cột
+df.head()
+
+# Đọc file
+train_path = "cnn_dailymail/cnn_dailymail/train.csv"
+val_path   = "cnn_dailymail/cnn_dailymail/validation.csv"
+
+train_df = pd.read_csv(train_path)
+val_df   = pd.read_csv(val_path)
+
+# Xem các cột có sẵn
+print(df.columns)
+
+# Cột chứa bài báo của tập train
+train_df['article_length'] = train_df['article'].apply(lambda x: len(str(x).split()))
+
+# Thống kê độ dài
+print("Số lượng bài (train):", len(train_df))
+print("Độ dài trung bình (train):", train_df['article_length'].mean())
+print("Độ dài lớn nhất (train):", train_df['article_length'].max())
+print("Độ dài nhỏ nhất (train):", train_df['article_length'].min())
+
+
+# Cột chứa bài báo của tập val
+val_df['article_length'] = val_df['article'].apply(lambda x: len(str(x).split()))
+
+# Thống kê độ dài
+print("Số lượng bài (val):", len(val_df))
+print("Độ dài trung bình (val):", val_df['article_length'].mean())
+print("Độ dài lớn nhất (val):", val_df['article_length'].max())
+print("Độ dài nhỏ nhất (val):", val_df['article_length'].min())
+
+import re
+
+print("Train:", train_df.shape)
+print("Validation:", val_df.shape)
+print("Các cột:", train_df.columns.tolist())
+
+# Làm sạch văn bản
+def clean_text(text):
+    text = str(text).lower()
+    text = re.sub(r'\([^)]*\)', '', text)      # bỏ nội dung trong ngoặc
+    text = re.sub('"', '', text)
+    text = re.sub(r"'s\b", "", text)           # bỏ "'s"
+    text = re.sub("[^a-zA-Z]", " ", text)      # bỏ ký tự không phải chữ cái
+    text = re.sub('[m]{2,}', 'mm', text)
+    text = re.sub(' +', ' ', text)             # bỏ khoảng trắng thừa
+    return text.strip()
+
+for df in [train_df, val_df]:
+    df['clean_article'] = df['article'].apply(clean_text)
+    df['clean_highlights'] = df['highlights'].apply(clean_text)
+
+# Loại bỏ bài quá ngắn
+for df_name, df in [('train', train_df), ('val', val_df)]:
+    before = df.shape[0]
+    df = df[df['clean_article'].apply(lambda x: len(x.split())) > 30]
+    df = df[df['clean_highlights'].apply(lambda x: len(x.split())) > 5]
+    after = df.shape[0]
+    print(f"{df_name}: giữ lại {after}/{before} mẫu sau khi lọc")
+
+# Lưu lại file đã xử lý
+train_df.to_csv("cnn_dailymail/cnn_dailymail/train_clean.csv", index=False)
+val_df.to_csv("cnn_dailymail/cnn_dailymail/val_clean.csv", index=False)
+
+print(" Hoàn tất tiền xử lý dữ liệu!")
+
+# Đọc dữ liệu tập test
+
+test_df = pd.read_csv("cnn_dailymail/cnn_dailymail/test.csv")
+print(test_df.head())
+
+def clean_text(text):
+    text = text.lower()
+    text = re.sub(r'\([^)]*\)', '', text)
+    text = re.sub('"', '', text)
+    text = re.sub(r"'s\b", "", text)
+    text = re.sub("[^a-zA-Z]", " ", text)
+    text = re.sub('[m]{2,}', 'mm', text)
+    text = re.sub(' +', ' ', text)
+    return text.strip()
+
+test_df['clean_article'] = test_df['article'].apply(clean_text)
+
+x_test = test_df['clean_article']
+
+x_test_seq = x_tokenizer.texts_to_sequences(x_test)
+x_test_seq = tf.keras.preprocessing.sequence.pad_sequences(x_test_seq, maxlen=max_text_len, padding='post')

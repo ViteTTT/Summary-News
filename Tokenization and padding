@@ -1,0 +1,29 @@
+# Tách dữ liệu đầu vào và đầu ra
+x_train = train_df['clean_article']
+y_train = train_df['clean_highlights']
+
+x_val = val_df['clean_article']
+y_val = val_df['clean_highlights']
+
+y_train = y_train.apply(lambda x: 'sostok ' + x + ' eostok')
+y_val = y_val.apply(lambda x: 'sostok ' + x + ' eostok')
+
+x_tokenizer = Tokenizer()
+x_tokenizer.fit_on_texts(list(x_train))
+
+y_tokenizer = Tokenizer()
+y_tokenizer.fit_on_texts(list(y_train))
+
+max_text_len = 250
+max_summary_len = 50
+
+x_train_seq = pad_sequences(x_tokenizer.texts_to_sequences(x_train), maxlen=max_text_len, padding='post')
+y_train_seq = pad_sequences(y_tokenizer.texts_to_sequences(y_train), maxlen=max_summary_len, padding='post')
+
+x_val_seq = pad_sequences(x_tokenizer.texts_to_sequences(x_val), maxlen=max_text_len, padding='post')
+y_val_seq = pad_sequences(y_tokenizer.texts_to_sequences(y_val), maxlen=max_summary_len, padding='post')
+
+vocab_x = len(x_tokenizer.word_index) + 1
+vocab_y = len(y_tokenizer.word_index) + 1
+
+print(f"Vocabulary Size (X): {vocab_x}, (Y): {vocab_y}")

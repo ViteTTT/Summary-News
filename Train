@@ -1,0 +1,25 @@
+# Mô hình
+from tensorflow.keras.callbacks import EarlyStopping
+
+# Callback dừng sớm
+earlystopping = EarlyStopping(
+    monitor='val_loss',
+    min_delta=1e-4,          # độ chênh nhỏ nhất để cải thiện
+    patience=5,              # dừng nếu 5 epoch liên tiếp không giảm val_loss
+    verbose=1,
+    restore_best_weights=True
+)
+
+# Huấn luyện mô hình
+history = model.fit(
+    [x_train_seq, y_train_seq[:, :-1]],  # input: article + highlights không có token cuối
+    y_train_seq[:, 1:].reshape(y_train_seq.shape[0], y_train_seq.shape[1]-1, 1),  # output: highlights dịch phải 1 bước
+    epochs=10,
+    batch_size=32,
+    validation_data=(
+        [x_val_seq, y_val_seq[:, :-1]],
+        y_val_seq[:, 1:].reshape(y_val_seq.shape[0], y_val_seq.shape[1]-1, 1)
+    ),
+    callbacks=[earlystopping],  # thêm callback vào đây
+    shuffle=True
+)
